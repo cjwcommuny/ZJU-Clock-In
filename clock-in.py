@@ -70,7 +70,8 @@ class DaKa(object):
             res = self.sess.get(self.BASE_URL, headers=self.headers)
             html = res.content.decode()
         try:
-            old_infos = re.findall(r'oldInfo: ({[^\n]+})', html)
+            old_infos = re.findall(r'var def \= ({[^\n]+})', html)
+            print(f'{old_infos=}')
             if len(old_infos) != 0:
                 old_info = json.loads(old_infos[0])
             else:
