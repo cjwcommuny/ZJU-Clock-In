@@ -20,6 +20,7 @@ jobs:
         run: |
           sudo -E apt-get -yqq update
           sudo -E apt-get -yqq install python3
+          python3 -m pip install beautifulsoup4
       - name: Clock In
         env:
           ACCOUNT: ${{ secrets.ACCOUNT }}

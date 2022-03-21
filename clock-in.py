@@ -9,6 +9,7 @@ import datetime
 import time
 import sys
 
+from bs4 import BeautifulSoup
 
 class DaKa(object):
     """Hit card class
@@ -69,25 +70,14 @@ class DaKa(object):
         if not html:
             res = self.sess.get(self.BASE_URL, headers=self.headers)
             html = res.content.decode()
-        try:
-            old_infos = re.findall(r'var def \= ({[^\n]+})', html)
-            print(f'{old_infos=}')
-            if len(old_infos) != 0:
-                old_info = json.loads(old_infos[0])
-            else:
-                raise RegexMatchError("未发现缓存信息，请先至少手动成功打卡一次再运行脚本")
-
-            new_info_tmp = json.loads(re.findall(r'def = ({[^\n]+})', html)[0])
-            new_id = new_info_tmp['id']
-            name = re.findall(r'realname: "([^\"]+)",', html)[0]
-            number = re.findall(r"number: '([^\']+)',", html)[0]
-        except IndexError:
-            raise RegexMatchError('Relative info not found in html with regex')
-        except json.decoder.JSONDecodeError:
-            raise DecodeError('JSON decode error')
-
+        soup = BeautifulSoup(BeautifulSoup(html, 'html.parser').prettify(), 'html.parser')
+        script_string = soup.find_all('script', type="text/javascript")[-1].string
+        old_info = json.loads(re.findall(r'var def = (.*})(?=;)', script_string)[0])
+        name = re.findall(r'realname: "([^\"]+)",', html)[0]
+        number = re.findall(r"number: '([^\']+)',", html)[0]
+        #
         new_info = old_info.copy()
-        new_info['id'] = new_id
+        # new_info['id'] = new_id
         new_info['name'] = name
         new_info['number'] = number
         new_info["date"] = self.get_date()
@@ -160,14 +150,10 @@ def main(username, password):
         raise Exception
 
     print('正在获取个人信息...')
-    try:
-        dk.get_info()
-        print('%s %s同学, 你好~' % (dk.info['number'], dk.info['name']))
-    except Exception as err:
-        print('获取信息失败，请手动打卡，更多信息: ' + str(err))
-        raise Exception
+    dk.get_info()
+    print('%s %s同学, 你好~' % (dk.info['number'], dk.info['name']))
 
-    print('正在为您打卡打卡打卡')
+    print('正在为您打卡')
     try:
         res = dk.post()
         if str(res['e']) == '0':
@@ -183,7 +169,4 @@ if __name__ == "__main__":
     print(sys.argv)
     username = sys.argv[1]
     password = sys.argv[2]
-    try:
-        main(username, password)
-    except Exception:
-        exit(1)
+    main(username, password)
