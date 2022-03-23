@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # 打卡脚修改自ZJU-nCov-Hitcarder的开源代码，感谢这位同学开源的代码
+import ast
 
 import requests
 import json
@@ -10,6 +11,20 @@ import time
 import sys
 
 from bs4 import BeautifulSoup
+
+def is_dict(obj: str) -> bool:
+    obj = obj.replace(' ', '')
+    return obj[1] == '"' or obj[1] == '\''
+
+def parse_dict(obj: str) -> dict:
+    return json.loads(obj)
+
+def parse_json_obj(obj: str) -> dict:
+    from argparse import Namespace
+    obj = obj.strip('{} ')
+    obj = obj.replace(':', '=')
+    to_evaluated = f'Namespace({obj})'
+    return vars(eval(to_evaluated))
 
 class DaKa(object):
     """Hit card class
@@ -71,8 +86,9 @@ class DaKa(object):
             res = self.sess.get(self.BASE_URL, headers=self.headers)
             html = res.content.decode()
         soup = BeautifulSoup(BeautifulSoup(html, 'html.parser').prettify(), 'html.parser')
-        script_string = soup.find_all('script', type="text/javascript")[-1].string
-        old_info = json.loads(re.findall(r'var def = (.*})(?=;)', script_string)[0])
+        script_string = soup.find_all('script', type="text/javascript")[-1].string.replace('\n', ' ')
+        obj = re.findall(r'var def = (.*?})(?=;)', script_string)[0]
+        old_info = parse_dict(obj) if is_dict(obj) else parse_json_obj(obj)
         name = re.findall(r'realname: "([^\"]+)",', html)[0]
         number = re.findall(r"number: '([^\']+)',", html)[0]
         #
