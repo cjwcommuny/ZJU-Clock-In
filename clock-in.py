@@ -20,6 +20,21 @@ class Rsa:
     modulus: str
     exponent: str
 
+def sanitize_json(text: str) -> str:
+    text = text.strip('{}, \t\n')
+    items = text.split(',')
+    key_vals = [[x.strip() for x in item.split(':')] for item in items]
+    key_vals = [
+        (f'"{key}"' if not key.startswith('"') else key, value)
+        for key, value in key_vals
+    ]
+    items = [
+        f'{key}:{value}'
+        for key, value in key_vals
+    ]
+    text = ','.join(items)
+    return '{' + text + '}'
+
 def generate_headers() -> dict:
     return {'user-agent': UserAgent().chrome}
 
@@ -63,9 +78,14 @@ def get_date() -> str:
 
 def generate_info(session: Session, base_url: str) -> dict:
     response = session.get(base_url, headers=generate_headers())
-    html: str = response.content.decode()
-    old_info_str = re.findall(r'oldInfo: ({.*}),', html)[0]
+    html: str = response.content.decode().replace('\n', ' ')
+    #
+    old_info_str = re.findall(r'oldInfo: ({.*}),\s*tipMsg', html)[0]
     old_info: dict = json.loads(old_info_str)
+    #
+    other_info_str = re.findall(r"def, {\s*jrdqtlqk: \[],\s*szgjcs: '',\s*(.*)}\),", html)[0].strip(' ,')
+    other_info: dict = json.loads('{' + other_info_str + '}')
+    old_info = other_info | old_info
     new_info = generate_new_info_from(old_info)
     return new_info
 
@@ -76,7 +96,7 @@ def generate_new_info_from(old_info: dict) -> dict:
     new_info['created'] = round(time.time())
     new_info["address"] = f'{province}{city}{region}'
     new_info["area"] = f'{province} {city} {region}'
-    new_info['provinece'] = province
+    new_info['province'] = province
     new_info['city'] = city
     new_info['address'] = '浙江省杭州市西湖区灵隐街道浙江大学玉泉校区'
     new_info['jrdqjcqk'] = 0
@@ -88,13 +108,18 @@ def generate_new_info_from(old_info: dict) -> dict:
     new_info['szgjcs'] = ""
     # --- new
     new_info['campus'] = '玉泉校区'
+    new_info['zgfx14rfhsj'] = ''
+    del new_info['jrdqtlqk'] # 是否从下列地区返回浙江格式错误
+    json.dump(new_info, open('new_info.json', 'w'), indent=4)
     return new_info
 
 def post_data(session: Session, save_url: str, info: dict):
     response_text = session.post(save_url, info, headers=generate_headers()).text
     response = json.loads(response_text)
-    if response['e'] != 0:
+    if response['e'] != 0 and response["m"] != '今天已经填报了':
         raise Exception(f'打卡失败: {response["m"]}')
+    else:
+        print(f'{response["m"]=}')
 
 
 if __name__ == '__main__':
@@ -104,4 +129,5 @@ if __name__ == '__main__':
     session = login(username, password)(LOGIN_URL, PUBLIC_KEY_URL)
     print('登录成功')
     new_info = generate_info(session, BASE_URL)
+    post_data(session, SAVE_URL, new_info)
     print('打卡成功')
