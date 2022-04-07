@@ -85,7 +85,7 @@ def generate_info(session: Session, base_url: str) -> dict:
     #
     other_info_str = re.findall(r"def, {\s*jrdqtlqk: \[],\s*szgjcs: '',\s*(.*)}\),", html)[0].strip(' ,')
     other_info: dict = json.loads('{' + other_info_str + '}')
-    old_info = other_info | old_info
+    old_info = {**other_info, **old_info}
     new_info = generate_new_info_from(old_info)
     return new_info
 
