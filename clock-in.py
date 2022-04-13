@@ -109,7 +109,8 @@ def generate_new_info_from(old_info: dict) -> dict:
     # --- new
     new_info['campus'] = '玉泉校区'
     new_info['zgfx14rfhsj'] = ''
-    del new_info['jrdqtlqk'] # 是否从下列地区返回浙江格式错误
+    if 'jrdqtlqk' in new_info:
+        del new_info['jrdqtlqk'] # 是否从下列地区返回浙江格式错误
     json.dump(new_info, open('new_info.json', 'w'), indent=4)
     return new_info
 
