@@ -19,7 +19,7 @@ SAVE_URL = "https://healthreport.zju.edu.cn/ncov/wap/default/save"
 VERIFY_CODE_URL = 'https://healthreport.zju.edu.cn/ncov/wap/default/code'
 VERIFY_CODE_FILE_NAME = 'code.png'
 TESSERACT_CMD = 'tesseract'
-MAX_TRIAL = 5
+MAX_TRIAL = 10
 
 @dataclass
 class Rsa:
@@ -99,9 +99,7 @@ def get_date() -> str:
     return "%4d%02d%02d" % (today.year, today.month, today.day)
 
 def get_verify_code(session: Session) -> PIL.Image.Image:
-    response = session.get(VERIFY_CODE_URL)
-    print(f'{response.status_code=}')
-    print(f'{response.reason=}')
+    response = session.get(VERIFY_CODE_URL, headers=generate_headers())
     print(f'{response.text=}')
     verify_code = response.content
     print(f'{len(verify_code)=}')
