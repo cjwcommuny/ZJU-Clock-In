@@ -100,6 +100,7 @@ def get_date() -> str:
 
 def get_verify_code(session: Session) -> PIL.Image.Image:
     verify_code = session.get(VERIFY_CODE_URL).content
+    print(f'{len(verify_code)=}')
     return PIL.Image.open(io.BytesIO(verify_code))
 
 def recognize_verify_code(image: PIL.Image.Image) -> str:
