@@ -1,4 +1,5 @@
 import datetime
+import io
 import json
 import re
 import sys
@@ -18,7 +19,7 @@ SAVE_URL = "https://healthreport.zju.edu.cn/ncov/wap/default/save"
 VERIFY_CODE_URL = 'https://healthreport.zju.edu.cn/ncov/wap/default/code'
 VERIFY_CODE_FILE_NAME = 'code.png'
 TESSERACT_CMD = 'tesseract'
-MAX_TRIAL = 3
+MAX_TRIAL = 5
 
 @dataclass
 class Rsa:
@@ -99,9 +100,7 @@ def get_date() -> str:
 
 def get_verify_code(session: Session) -> PIL.Image.Image:
     verify_code = session.get(VERIFY_CODE_URL).content
-    with open(VERIFY_CODE_FILE_NAME, 'wb') as verify_code_file:
-        verify_code_file.write(verify_code)
-    return PIL.Image.open(VERIFY_CODE_FILE_NAME)
+    return PIL.Image.open(io.BytesIO(verify_code))
 
 def recognize_verify_code(image: PIL.Image.Image) -> str:
     return pytesseract.image_to_string(image).strip()
