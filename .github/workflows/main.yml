@@ -22,6 +22,7 @@ jobs:
           sudo -E apt-get -yqq install python3
           sudo -E apt-get -yqq install tesseract-ocr
           python3 -m pip install fake-useragent
+          python3 -m pip install Pillow
       - name: Clock In
         env:
           ACCOUNT: ${{ secrets.ACCOUNT }}
