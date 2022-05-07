@@ -23,6 +23,7 @@ jobs:
           sudo -E apt-get -yqq install tesseract-ocr
           python3 -m pip install fake-useragent
           python3 -m pip install Pillow
+          python3 -m pip install pytesseract
       - name: Clock In
         env:
           ACCOUNT: ${{ secrets.ACCOUNT }}
