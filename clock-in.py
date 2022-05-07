@@ -5,20 +5,41 @@ import sys
 import time
 from copy import copy
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Union
 
-from fake_useragent import UserAgent
+import PIL.Image
+import pytesseract
 from requests import Response, Session
 
 LOGIN_URL = 'https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fhealthreport.zju.edu.cn%2Fa_zju%2Fapi%2Fsso%2Findex%3Fredirect%3Dhttps%253A%252F%252Fhealthreport.zju.edu.cn%252Fncov%252Fwap%252Fdefault%252Findex'
 PUBLIC_KEY_URL = 'https://zjuam.zju.edu.cn/cas/v2/getPubKey'
 BASE_URL = "https://healthreport.zju.edu.cn/ncov/wap/default/index"
 SAVE_URL = "https://healthreport.zju.edu.cn/ncov/wap/default/save"
+VERIFY_CODE_URL = 'https://healthreport.zju.edu.cn/ncov/wap/default/code'
+VERIFY_CODE_FILE_NAME = 'code.png'
+TESSERACT_CMD = 'tesseract'
+MAX_TRIAL = 3
 
 @dataclass
 class Rsa:
     modulus: str
     exponent: str
+
+# result
+class Retry:
+    pass
+
+class Success:
+    pass
+
+class HaveClockIn:
+    pass
+
+@dataclass
+class Error:
+    message: str
+
+Result = Union[Success, Retry, HaveClockIn, Error]
 
 def sanitize_json(text: str) -> str:
     text = text.strip('{}, \t\n')
@@ -36,7 +57,7 @@ def sanitize_json(text: str) -> str:
     return '{' + text + '}'
 
 def generate_headers() -> dict:
-    return {'user-agent': UserAgent().chrome}
+    return {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36'}
 
 def get_execution(session: Session, login_url: str) -> str:
     response: Response = session.get(login_url)
@@ -76,16 +97,27 @@ def get_date() -> str:
     today = datetime.date.today()
     return "%4d%02d%02d" % (today.year, today.month, today.day)
 
+def get_verify_code(session: Session) -> PIL.Image.Image:
+    verify_code = session.get(VERIFY_CODE_URL).content
+    with open(VERIFY_CODE_FILE_NAME, 'wb') as verify_code_file:
+        verify_code_file.write(verify_code)
+    return PIL.Image.open(VERIFY_CODE_FILE_NAME)
+
+def recognize_verify_code(image: PIL.Image.Image) -> str:
+    return pytesseract.image_to_string(image).strip()
+
 def generate_info(session: Session, base_url: str) -> dict:
     response = session.get(base_url, headers=generate_headers())
     html: str = response.content.decode().replace('\n', ' ')
+    verify_code = recognize_verify_code(get_verify_code(session))
+    print(f'{verify_code=}')
     #
     old_info_str = re.findall(r'oldInfo: ({.*}),\s*tipMsg', html)[0]
     old_info: dict = json.loads(old_info_str)
     #
-    other_info_str = re.findall(r"def, {\s*jrdqtlqk: \[],\s*szgjcs: '',\s*(.*)}\),", html)[0].strip(' ,')
+    other_info_str = re.findall(r"def, {\s*jrdqtlqk: \[],\s*szgjcs: '',\s*verifyCode: '',\s*(.*)}\),", html)[0].strip(' ,')
     other_info: dict = json.loads('{' + other_info_str + '}')
-    old_info = {**other_info, **old_info}
+    old_info = { **other_info, **old_info, 'verifyCode': verify_code }
     new_info = generate_new_info_from(old_info)
     return new_info
 
@@ -114,21 +146,42 @@ def generate_new_info_from(old_info: dict) -> dict:
     json.dump(new_info, open('new_info.json', 'w'), indent=4)
     return new_info
 
-def post_data(session: Session, save_url: str, info: dict):
+def post_data(session: Session, save_url: str, info: dict) -> Result:
     response_text = session.post(save_url, info, headers=generate_headers()).text
     response = json.loads(response_text)
-    if response['e'] != 0 and response["m"] != '今天已经填报了':
-        raise Exception(f'打卡失败: {response["m"]}')
+    if response['e'] == 0:
+        return Success()
     else:
-        print(f'{response["m"]=}')
+        error_message = response["m"].strip()
+        if error_message == '今天已经填报了':
+            return HaveClockIn()
+        elif error_message == '验证码错误':
+            return Retry()
+        else:
+            return Error(error_message)
+
+def clock_in(username: str, password: str):
+    print('开始打卡')
+    for _ in range(MAX_TRIAL):
+        session = login(username, password)(LOGIN_URL, PUBLIC_KEY_URL)
+        new_info = generate_info(session, BASE_URL)
+        result = post_data(session, SAVE_URL, new_info)
+        if type(result) == Success or type(result) == HaveClockIn:
+            print('打卡成功')
+            return
+        elif type(result) == Retry:
+            print('重试打卡')
+            time.sleep(5)
+            continue
+        elif type(result) == Error:
+            print(f'打卡失败：{result.message}')
+            return
+        else:
+            raise NotImplementedError()
 
 
 if __name__ == '__main__':
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
     username = sys.argv[1]
     password = sys.argv[2]
-    print('开始打卡')
-    session = login(username, password)(LOGIN_URL, PUBLIC_KEY_URL)
-    print('登录成功')
-    new_info = generate_info(session, BASE_URL)
-    post_data(session, SAVE_URL, new_info)
-    print('打卡成功')
+    clock_in(username, password)

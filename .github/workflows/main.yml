@@ -20,6 +20,7 @@ jobs:
         run: |
           sudo -E apt-get -yqq update
           sudo -E apt-get -yqq install python3
+          sudo -E apt-get -yqq install tesseract-ocr
           python3 -m pip install fake-useragent
       - name: Clock In
         env:
