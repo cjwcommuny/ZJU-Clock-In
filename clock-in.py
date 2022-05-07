@@ -99,7 +99,11 @@ def get_date() -> str:
     return "%4d%02d%02d" % (today.year, today.month, today.day)
 
 def get_verify_code(session: Session) -> PIL.Image.Image:
-    verify_code = session.get(VERIFY_CODE_URL).content
+    response = session.get(VERIFY_CODE_URL)
+    print(f'{response.status_code=}')
+    print(f'{response.reason=}')
+    print(f'{response.text=}')
+    verify_code = response.content
     print(f'{len(verify_code)=}')
     return PIL.Image.open(io.BytesIO(verify_code))
 
