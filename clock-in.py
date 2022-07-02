@@ -109,14 +109,14 @@ def recognize_verify_code(image: PIL.Image.Image) -> str:
 def generate_info(session: Session, base_url: str) -> dict:
     response = session.get(base_url, headers=generate_headers())
     html: str = response.content.decode().replace('\n', ' ')
-    open('html.html', 'w').write(html)
+    # open('html.html', 'w').write(html)
     verify_code = recognize_verify_code(get_verify_code(session))
     print(f'{verify_code=}')
     #
     old_info_str = re.findall(r'oldInfo: ({.*}),\s*tipMsg', html)[0]
     old_info: dict = json.loads(old_info_str)
     #
-    other_info_str = re.findall(r"def, {\s*sfqrxxss: 1,\s*jrdqtlqk: \[],\s*szgjcs: '',\s*verifyCode: '',\s*(.*)}\),", html)[0].strip(' ,')
+    other_info_str = re.findall(r"def, {.*,\s*verifyCode: '',\s*(.*)}\),", html)[0].strip(' ,')
     other_info: dict = json.loads('{' + other_info_str + '}')
     old_info = { **other_info, **old_info, 'verifyCode': verify_code }
     new_info = generate_new_info_from(old_info)
