@@ -108,18 +108,10 @@ def recognize_verify_code(image: PIL.Image.Image) -> str:
 
 def generate_info(session: Session, base_url: str) -> dict:
     response = session.get(base_url, headers=generate_headers())
-    html: str = response.content.decode().replace('\n', ' ')
-    # open('html.html', 'w').write(html)
-    verify_code = recognize_verify_code(get_verify_code(session))
-    print(f'{verify_code=}')
+    html: str = response.content.decode()
     #
-    old_info_str = re.findall(r'oldInfo: ({.*}),\s*tipMsg', html)[0]
-    old_info: dict = json.loads(old_info_str)
-    #
-    other_info_str = re.findall(r"def, {.*,\s*verifyCode: '',\s*(.*)}\),", html)[0].strip(' ,')
-    other_info: dict = json.loads('{' + other_info_str + '}')
-    old_info = { **other_info, **old_info, 'verifyCode': verify_code }
-    new_info = generate_new_info_from(old_info)
+    def_info = json.loads(re.findall(r'var def = ({[^\n]+});', html)[0])
+    new_info = generate_new_info_from(def_info)
     return new_info
 
 def generate_new_info_from(old_info: dict) -> dict:
@@ -142,6 +134,8 @@ def generate_new_info_from(old_info: dict) -> dict:
     # --- new
     new_info['campus'] = '玉泉校区'
     new_info['zgfx14rfhsj'] = ''
+    new_info['ismoved'] = 0
+    new_info['sfzx'] = 1
     if 'jrdqtlqk' in new_info:
         del new_info['jrdqtlqk'] # 是否从下列地区返回浙江格式错误
     json.dump(new_info, open('new_info.json', 'w'), indent=4)
@@ -176,7 +170,7 @@ def clock_in(username: str, password: str):
             continue
         elif type(result) == Error:
             print(f'打卡失败：{result.message}')
-            return
+            raise Exception("打卡失败")
         else:
             raise NotImplementedError()
 
