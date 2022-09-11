@@ -40,6 +40,7 @@ class HaveClockIn:
 class Error:
     message: str
 
+
 Result = Union[Success, Retry, HaveClockIn, Error]
 
 def sanitize_json(text: str) -> str:
@@ -115,30 +116,82 @@ def generate_info(session: Session, base_url: str) -> dict:
     return new_info
 
 def generate_new_info_from(old_info: dict) -> dict:
-    province, city, region = '浙江省', '杭州市', '西湖区'
-    new_info = copy(old_info)
-    new_info['date'] = get_date()
-    new_info['created'] = round(time.time())
-    new_info["address"] = f'{province}{city}{region}'
-    new_info["area"] = f'{province} {city} {region}'
-    new_info['province'] = province
-    new_info['city'] = city
-    new_info['address'] = '浙江省杭州市西湖区灵隐街道浙江大学玉泉校区'
-    new_info['jrdqjcqk'] = 0
-    new_info['sfsqhzjkk'] = 1   # 是否申领杭州健康码
-    new_info['sqhzjkkys'] = 1   # 杭州健康吗颜色，1:绿色 2:红色 3:黄色
-    new_info['sfqrxxss'] = 1    # 是否确认信息属实
-    new_info['jcqzrq'] = ""
-    new_info['gwszdd'] = ""
-    new_info['szgjcs'] = ""
-    # --- new
-    new_info['campus'] = '玉泉校区'
-    new_info['zgfx14rfhsj'] = ''
-    new_info['ismoved'] = 0
-    new_info['sfzx'] = 1
-    if 'jrdqtlqk' in new_info:
-        del new_info['jrdqtlqk'] # 是否从下列地区返回浙江格式错误
-    json.dump(new_info, open('new_info.json', 'w'), indent=4)
+    new_info = {
+        "sfymqjczrj": "0", # 入境
+        "zjdfgj": "",
+        "sfyrjjh": "0",
+        "cfgj": "",
+        "tjgj": "",
+        "nrjrq": "0",
+        "rjka": "",
+        "jnmddsheng": "",
+        "jnmddshi": "",
+        "jnmddqu": "",
+        "jnmddxiangxi": "",
+        "rjjtfs": "",
+        "rjjtfs1": "",
+        "rjjtgjbc": "",
+        "jnjtfs": "",
+        "jnjtfs1": "",
+        "jnjtgjbc": "",
+        "sfqrxxss": "1", # 是否确认信息属实
+        "sfqtyyqjwdg": "",
+        "sffrqjwdg": "",
+        "sfhsjc": "",
+        "zgfx14rfh": "0",
+        "zgfx14rfhdd": "",
+        "sfyxjzxgym": "",
+        "sfbyjzrq": "0",
+        "jzxgymqk": "0",
+        "campus": "玉泉校区",
+        "ismoved": "0",
+        "tw": "0",
+        "sfcxtz": "0",
+        "sfjcbh": "0",
+        "sfcxzysx": "0",
+        "qksm": "",
+        "sfyyjc": "0",
+        "jcjgqr": "0",
+        "remark": "",
+        "address": "浙江省杭州市西湖区灵隐街道庆丰新村",
+        "geo_api_info": "{\"type\":\"complete\",\"position\":{\"Q\":30.269411892362,\"R\":120.12539306640701,\"lng\":120.125393,\"lat\":30.269412},\"location_type\":\"html5\",\"message\":\"Get+ipLocation+failed.Get+geolocation+success.Convert+Success.Get+address+success.\",\"accuracy\":199,\"isConverted\":true,\"status\":1,\"addressComponent\":{\"citycode\":\"0571\",\"adcode\":\"330106\",\"businessAreas\":[{\"name\":\"西溪\",\"id\":\"330106\",\"location\":{\"Q\":30.271791,\"R\":120.09102999999999,\"lng\":120.09103,\"lat\":30.271791}},{\"name\":\"西湖\",\"id\":\"330106\",\"location\":{\"Q\":30.253167,\"R\":120.137878,\"lng\":120.137878,\"lat\":30.253167}},{\"name\":\"黄龙\",\"id\":\"330106\",\"location\":{\"Q\":30.266482,\"R\":120.13581299999998,\"lng\":120.135813,\"lat\":30.266482}}],\"neighborhoodType\":\"商务住宅;住宅区;住宅小区\",\"neighborhood\":\"庆丰新村\",\"building\":\"\",\"buildingType\":\"\",\"street\":\"西溪路\",\"streetNumber\":\"378号\",\"country\":\"中国\",\"province\":\"浙江省\",\"city\":\"杭州市\",\"district\":\"西湖区\",\"towncode\":\"330106003000\",\"township\":\"灵隐街道\"},\"formattedAddress\":\"浙江省杭州市西湖区灵隐街道庆丰新村\",\"roads\":[],\"crosses\":[],\"pois\":[],\"info\":\"SUCCESS\"}",
+        "area": "浙江省+杭州市+西湖区",
+        "province": "浙江省",
+        "city": "杭州市",
+        "sfzx": "1",
+        "sfjcwhry": "0",
+        "sfjchbry": "0",
+        "sfcyglq": "0",
+        "gllx": "",
+        "glksrq": "",
+        "jcbhlx": "",
+        "jcbhrq": "",
+        "bztcyy": "",
+        "sftjhb": "",
+        "sftjwh": "0",
+        "sfjcqz": "",
+        "jcqzrq": "",
+        "jrsfqzys": "",
+        "jrsfqzfy": "",
+        "sfyqjzgc": "0",
+        "sfsqhzjkk": "0", # 是否申领杭州健康码
+        "sqhzjkkys": "1", # 杭州健康吗颜色，1:绿色 2:红色 3:黄色
+        "gwszgzcs": "",
+        "szgj": "",
+        "internship": "1",
+        "fxyy": "",
+        "jcjg": "",
+        "date": get_date(),
+        "uid": "85614",
+        "created": round(time.time()),
+        "id": "55443557",
+        "gwszdd": "",
+        "szsqsfybl": "0",
+        "sfygtjzzfj": "",
+        "gtjzzfjsj": "",
+        "szgjcs": "",
+        "verifyCode": ""
+    }
     return new_info
 
 def post_data(session: Session, save_url: str, info: dict) -> Result:
